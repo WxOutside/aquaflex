@@ -11,14 +11,13 @@ from aquaflex import aquaflex_functions as aquaflex
 from aquaflex import aquaflex_config as aquaflex_config
 
 def main(argv):
-    
     # First, find out if any parameters were passed
     new_address=''
     new_soil=''
     try:
-        opts, args = getopt.getopt(argv,"a:s:",["new=", "soil="])
+        opts, args = getopt.getopt(argv,"a:s:",["address=", "soil="])
     except getopt.GetoptError:
-        print ('aquaflex_logger.py -new <new_address>')
+        print ('aquaflex_logger.py -address <new_address> -soil <sand or clay>')
         sys.exit(2)
         
     for opt, arg in opts:
@@ -139,7 +138,5 @@ def main(argv):
     # All finished with the sensor, we can close it now:    
     device.close()
     
-    
-
 if __name__ == "__main__":
     main(sys.argv[1:])
