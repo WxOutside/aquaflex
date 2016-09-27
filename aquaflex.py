@@ -7,19 +7,10 @@ import time
 import socket
 import sys
 
-sys.path.append(os.path.abspath('/home/pi/telemetry/'))
-from functions import date_time, run_proc, update_last_record
-from config import couchdb_baseurl
-
 from aquaflex import aquaflex_functions as aquaflex
 from aquaflex import aquaflex_config as aquaflex_config
 
 def main(argv):
-    
-    #get_aquaflex_readings=check_sensor_config()
-    #if get_aquaflex_readings==False:
-    #    print ('This sensor is not configured to measure soil mositure or temperature, exiting...')
-    #    exit()
     
     # First, find out if any parameters were passed
     new_address=''
@@ -44,11 +35,6 @@ def main(argv):
     if new_soil!='':
         change_soil=True
         
-    # Initialise the device
-    #device=serial.Serial("/dev/ttyUSB0",baudrate=9600,timeout=10)
-    
-    #time.sleep(2.5) # delay for arduino bootloader and the 1 second delay of the adapter.
-    
     device=aquaflex.get_device()
     
     # Now get the address from the serial device we've connected to.
@@ -99,31 +85,7 @@ def main(argv):
     # Get the soil type - we need this for the equation later
     soil_type=aquaflex.query_soil_type(device, address)
     
-    #if soil_type!=config_soil_type:
-    #    print ('The sensor is configured for the wrong soil type (',soil_type,') - we are expecting "clay"')
-    #    exit()
-        
     # Now check the database to see if we already have a record
-    host_name=socket.gethostname()
-    date,hour=date_time()
-    
-    doc_name=host_name + '_' + date + ':' + hour
-    output=run_proc('GET', couchdb_baseurl + '/telemetry/' + doc_name)
-
-    #Check to see if we already have a reading for this
-    has_record=False
-    try:
-        # A cursory check - if the temperature setting is there, assume it's a valid record
-        if output['aquaflex_temperature']:
-            has_record=True
-                
-    except:
-        print ("No record for this hour, let's create one!")
-    
-    if has_record:
-        print ("This hour already has a record, we're not going to update it again")
-        exit()
-        
     # Now we can get the measurement
     delay, data_items=aquaflex.measurement_request(device, address)
     
@@ -150,7 +112,7 @@ def main(argv):
         
     if error_message!=False:
         print (error_message)
-        #exit();
+        exit();
     
     print('soil moisture:', soil_moisture, 'soil temperature:', soil_temperature, 'voltage:', battery_voltage)
     print('raw1:', raw1, 'raw2:', raw2)
@@ -172,50 +134,12 @@ def main(argv):
         
     vmc=round(vmc, 2)
 
+    print ('VMC as calculated:', vmc)
+    
     # All finished with the sensor, we can close it now:    
     device.close()
     
-    # Now update the local database
-    host_name=socket.gethostname()
-    date,hour=date_time()
-        
-    json_items={}
-    try:
-        if output['_rev']:
-            json_items=output
-        
-            print ("We need to update rev_id " + json_items['_rev'])   
-            
-    except:
-        print ("No entry for this hour, not updating a revision")
-        # We need to add these values so that we can retreive them in views.
-        # We only add these for new records because these values shouldn't change if the record is updated
-        json_items['host_name']=host_name
-        json_items['date']=date
-        json_items['hour']=hour
-        
-    #Now load in our telemetry readings:
-    json_items['aquaflex_temperature']=soil_temperature
-    json_items['aquaflex_moisture']=soil_moisture
     
-    json_items['aquaflex_voltage']=battery_voltage
-    json_items['aquaflex_cc']=raw1
-    json_items['aquaflex_ll']=raw2
-    json_items['aquaflex_vmc']=vmc
-    json_items['aquaflex_error_code']=error_code
-    
-    # Now convert this data and save it
-    json_string=json.dumps(json_items)   
-    
-    replication_output=run_proc('PUT', couchdb_baseurl + '/telemetry/' + doc_name, json_string)
-    print ('Record written to ' + doc_name)
-    #print (replication_output)
-    
-    ###################################################
-    # update the last_record entry:
-    current_time=time.strftime("%Y-%m-%d %H:%M:%S")
-    json_items['am2315_last_updated']=current_time
-    update_last_record(couchdb_baseurl, host_name, json_items)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
