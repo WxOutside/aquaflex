@@ -1,5 +1,5 @@
 #!/usr/local/opt/python-3.5.1/bin/python3.5
-# SDI-12 Sensor Data Logger Copyright Dr. John Liu 2016-02-09
+
 import getopt
 import json
 import os
@@ -106,6 +106,8 @@ def main(argv):
         error_message='Low power. The voltage is too low to take a reading.'
     elif error_code=='-03':
         error_message='Corrupt configuration. The configuration has failed its CRC checks and the calibration cannot be relied on.'
+    elif(error_code[0,1]=='-'):
+        error_message='Sensor misconfigured - try doing a factory reset.'
     else:
         error_message=False
         
