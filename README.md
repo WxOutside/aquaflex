@@ -1,6 +1,6 @@
-# aquaflex
+# Aquaflex
 
-This is standalone code for the Aquaflex sensor.
+This is standalone code for the Aquaflex sensor. For an example of how it can integrate with CouchDB or other recording options, please see the software WxOutside repository.
 
 Requirements
 ============
